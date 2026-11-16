@@ -110,6 +110,22 @@ console.log('PASS: quota fresh (reset passed, low recompute, stale note, used-pe
     await page.waitForTimeout(1500);
     await page.evaluate(() => applyQuota('claude'));   // 等同定时器那一下
     assert.match(await page.locator('#quota').innerText(), /本周 已重置/);
+
+    // 换成别的模型：插件写空额度（register.ts 的 NO_QUOTA），旧数字和紧张都清掉，两种样式都不画东西
+    for (const style of ['text', 'bars']) {
+      const cleared = await page.evaluate(style => {
+        const t = Date.now() / 1000;
+        setQuotaStyle(style);
+        setQuota('claude', { text: '5小时 已用 95%', low: true, bars: [{ label: '5小时', left: .05, reset: t + 3600 }] }, t);
+        const before = document.getElementById('quota').innerText;
+        setQuota('claude', { text: '', low: false, bars: [] }, t);
+        return { before, after: document.getElementById('quota').innerText, low: !!quota.claude?.low, tier: quotaTier(quota.claude) };
+      }, style);
+      assert.match(cleared.before, /95%/, style);
+      assert.equal(cleared.after.trim(), '', style);
+      assert.equal(cleared.low, false, style);
+      assert.equal(cleared.tier, null, style);
+    }
     assert.deepEqual(errors, []);
     console.log('PASS: quota page (text/bars stale note, reset passed, re-evaluate)');
   } finally {

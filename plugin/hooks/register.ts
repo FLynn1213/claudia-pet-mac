@@ -106,6 +106,9 @@ export function quotaOf(limits: Limit[]) {
   return { text: parts.join(' ｜ '), low: top.percentUsed >= 90, bars }
 }
 
+// 空额度：网页按它不显示额度、不算紧张、不换钱袋档位
+export const NO_QUOTA = { text: '', low: false, bars: [] as never[] }
+
 const BIG_JOB_TOOLS = 8   // 一轮里用了这么多次工具，完成时「得意」一下
 
 export const register: Register = on => {
@@ -115,9 +118,11 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     void ensurePet($).catch(() => {})
     await setState($, { pose: 'idle', event: 'SessionStart', tool: '', ts: now() })
+    // 这次会话 Claude Code 一个认得的额度都没报（换成别的模型 / 别家接口时就是这样）：写一份空额度把旧数字清掉，
+    // 不然桌宠会一直挂着上次官方账号的数（2026-11-15）。只有 usage() 真的拿到了结果才清，读不到（抛错）就不动
     try {
-      const q = quotaOf((await $.session.usage()).rateLimits)
-      if (q) await write($, 'claude-quota.json', q)
+      const q = quotaOf((await $.session.usage()).rateLimits ?? [])
+      await write($, 'claude-quota.json', q ?? NO_QUOTA)
     } catch {}
     return next(e)
   })
