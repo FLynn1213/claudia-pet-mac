@@ -39,6 +39,7 @@ namespace Claudia
                     return d;
                 }).ToList(),
                 ["integrations"] = ClaudeIntegrations(),
+                ["runMode"] = Store.Standalone ? "standalone" : "claude",
                 ["pets"] = PetList(), ["maxPets"] = Store.MaxExtraPets + 1,
             };
         }
@@ -73,6 +74,9 @@ namespace Claudia
                         case "hideHotkey": if (value is string hk) { Store.Settings["hideHotkey"] = hk; Store.SaveSettings(); RegisterHideHotKey(); } break;
                         case "quotaStyle":
                             if (value is string qs && (qs == "text" || qs == "bars")) { Store.Settings["quotaStyle"] = qs; Store.SaveSettings(); Js($"setQuotaStyle({Q(qs)})"); }
+                            break;
+                        case "runMode":   // 所有几只共用（Store.SetStandalone），别的那几只一秒内跟上
+                            if (value is string rm && (rm == "claude" || rm == "standalone")) { Store.SetStandalone(rm == "standalone"); CheckRunMode(); }
                             break;
                         case "powerSave": Store.Settings["powerSave"] = on; Store.SaveSettings(); Js($"setPowerSave({(on ? "true" : "false")})"); break;
                         case "aura":

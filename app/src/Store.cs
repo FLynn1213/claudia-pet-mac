@@ -114,6 +114,43 @@ namespace Claudia
         public static bool Flag(string key) => Settings.TryGetValue(key, out var v) && v is bool b && b;
         public static Dictionary<string, object> Names => (Dictionary<string, object>)Settings["names"];
 
+        // ---- 运行方式（2026-11-16）----
+        // 「跟着 Claude」：Claude 打开时由插件 / MCP 叫出来，Claude 关了就走（0.4.1 及以前都是这样）；
+        // 「独立运行」：双击程序就出来，不需要 Claude，只有从菜单退出才走。
+        // 所有几只共用一份，单独存在 run.json：放进第一只的 settings.json 的话，别的几只改了会被第一只存设置时盖掉
+        static string RunFile => Path.Combine(Data, "run.json");
+        public static bool HasRunMode => File.Exists(RunFile);
+        static bool standalone;
+        static DateTime runStamp = DateTime.MinValue, runCheckedAt = DateTime.MinValue;
+        /// <summary>是不是独立运行。按 run.json 的修改时间缓存，最多一秒看一次文件：别的那只改了，这一只一秒内跟上</summary>
+        public static bool Standalone
+        {
+            get
+            {
+                var now = DateTime.UtcNow;
+                if ((now - runCheckedAt).TotalSeconds < 1) return standalone;
+                runCheckedAt = now;
+                try
+                {
+                    var stamp = File.Exists(RunFile) ? File.GetLastWriteTimeUtc(RunFile) : DateTime.MinValue;
+                    if (stamp != runStamp)
+                    {
+                        runStamp = stamp;
+                        var d = ReadJson(RunFile);
+                        standalone = d != null && d.TryGetValue("mode", out var m) && m as string == "standalone";
+                    }
+                }
+                catch { }
+                return standalone;
+            }
+        }
+        public static void SetStandalone(bool on)
+        {
+            try { WriteJson(RunFile, new Dictionary<string, object> { ["mode"] = on ? "standalone" : "claude" }); }
+            catch (Exception e) { Log("保存运行方式失败: " + e.Message); }
+            standalone = on; runCheckedAt = DateTime.MinValue;
+        }
+
         /// <summary>只在内置素材有变化时更新。用户另外添加的角色目录不参与同步。</summary>
         public static void SyncResources()
         {

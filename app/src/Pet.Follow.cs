@@ -10,6 +10,7 @@ namespace Claudia
         // ---------------- 跟着 Claude 窗口 ----------------
         // 她待在 Claude 桌面端的窗口里：紧贴在它上方一层、但不置顶，别的程序盖住 Claude 时也盖住她；
         // Claude 最小化 / 收进托盘时移到屏幕外；Claude 关了就退出（由 Claude Code 插件或桌面端 MCP 拉起，下次打开 Claude 会再出来）。
+        // 「独立运行」（Store.Standalone）时不退出：看不到 Claude 窗口就先待在桌面上，Claude 窗口出来了再回去（CheckRunMode）。
         // 位置按「离 Claude 窗口右下角多远」记：Claude 窗口挪动、改大小，她跟着走；拖到窗口外松手会被推回窗口里。
         // 找 Claude 主窗口时只认有标题的 Chrome_WidgetWin_1：Process.MainWindowHandle 有时会拿到 Claude 留下的空白阴影窗口（SysShadow）。
         const int DefaultOffRight = 40, DefaultOffBottom = 100;
@@ -20,7 +21,31 @@ namespace Claudia
         IntPtr claudeHwnd = IntPtr.Zero;
         HashSet<uint> claudePids = new HashSet<uint>();
         DateTime pidsAt = DateTime.MinValue, claudeSeenAt = DateTime.MinValue;
-        readonly DateTime followSince = DateTime.UtcNow;
+        DateTime followSince = DateTime.UtcNow;
+        bool wasStandalone;
+
+        /// <summary>现在看不到 Claude 窗口：没开，或者开着但收进了托盘（最小化不算：最小化时她照旧跟着藏起来）</summary>
+        bool ClaudeAway() => claudePids.Count == 0 || claudeHwnd == IntPtr.Zero
+            || !Native.IsWindowVisible(claudeHwnd) && !FollowNative.IsIconic(claudeHwnd);
+
+        /// <summary>该待在哪：选了桌面就桌面；独立运行时，选了 Claude 窗口但现在看不到 Claude，先待在桌面上（不改存着的设置）</summary>
+        bool WantDesktop() => OnDesktop || Store.Standalone && ClaudeAway();
+
+        /// <summary>每秒一次：运行方式被别的那只或设置页改了、Claude 开了或关了，就换地方</summary>
+        void CheckRunMode()
+        {
+            var standalone = Store.Standalone;
+            if (standalone != wasStandalone)
+            {
+                wasStandalone = standalone;
+                // 改回「跟着 Claude」时从现在起重新计时：Claude 没开的话 30 秒后再走，不是马上就走
+                if (!standalone) { followSince = DateTime.UtcNow; claudeSeenAt = DateTime.MinValue; }
+                Store.Log(standalone ? "运行方式：独立运行" : "运行方式：跟着 Claude");
+                PushSettings();
+            }
+            var desk = WantDesktop();
+            if (desk != desktopMode) SwitchArea(desk);
+        }
 
         void StartFollow()
         {
@@ -79,9 +104,10 @@ namespace Claudia
                 claudePids = FollowNative.ClaudeAppPids();
                 claudeHwnd = claudePids.Count > 0 ? FollowNative.FindClaudeMain(claudePids) : IntPtr.Zero;
                 PetTick();
+                CheckRunMode();
             }
             if (claudePids.Count > 0) claudeSeenAt = now;
-            else
+            else if (!Store.Standalone)   // 独立运行：Claude 关了也不走
             {
                 // 开着时看不到 Claude 了：等 2 秒确认是真的关了（更新重启也算关），再退出；从一开始就没看到 Claude，等 30 秒
                 var never = claudeSeenAt == DateTime.MinValue;

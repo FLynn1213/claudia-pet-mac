@@ -16,6 +16,8 @@ namespace Claudia
     static class Ensure
     {
         public static string MutexName => @"Local\Claudia-" + Environment.UserName;
+        /// <summary>由 Claude 叫出来的带这个参数，自己双击打开的没有：第一次运行时据此选运行方式（见 Program）</summary>
+        public const string ByClaudeArg = "--by-claude";
 
         public static bool PetRunning()
         {
@@ -35,7 +37,7 @@ namespace Claudia
                 var claudeAt = ClaudeStartedAt();
                 if (claudeAt == null || claudeAt <= quitAt) return "不打开：你从菜单退出过，这个 Claude 是在那之前就开着的";
             }
-            return Launch(Process.GetCurrentProcess().MainModule.FileName, "");
+            return Launch(Process.GetCurrentProcess().MainModule.FileName, ByClaudeArg);
         }
 
         /// <summary>Claude 桌面端最早的那个进程是什么时候开的（UTC）；没开返回 null</summary>

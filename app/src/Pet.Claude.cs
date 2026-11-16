@@ -56,6 +56,8 @@ namespace Claudia
             var cfg = Store.ReadJson(DesktopConfig);
             return cfg != null && cfg.TryGetValue("mcpServers", out var m) && m is Dictionary<string, object> servers && servers.ContainsKey(Store.AppName);
         }
+        /// <summary>接入过 Claude 没有（插件或桌面端 MCP 任一个）：第一次运行选运行方式时用</summary>
+        public static bool ClaudeConnected() => PluginInstalled() || McpInstalled();
 
         static string SeenText()
         {

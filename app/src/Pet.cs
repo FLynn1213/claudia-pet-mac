@@ -55,7 +55,12 @@ namespace Claudia
         public void Start()
         {
             if (Store.IsMain) Store.SyncResources();   // 多开的几只用第一只同步好的素材
-            desktopMode = OnDesktop;
+            // 先看一眼 Claude 在不在：独立运行时 Claude 没开就从桌面上开始，开着就直接进窗口，不先在桌面上闪一下
+            claudePids = FollowNative.ClaudeAppPids();
+            claudeHwnd = claudePids.Count > 0 ? FollowNative.FindClaudeMain(claudePids) : IntPtr.Zero;
+            wasStandalone = Store.Standalone;
+            desktopMode = WantDesktop();
+            Store.Log($"运行方式：{(wasStandalone ? "独立运行" : "跟着 Claude")}，{(desktopMode ? "待在桌面上" : "待在 Claude 窗口里")}");
             current = Store.Settings.TryGetValue("character", out var c) && c is string s ? s : "claude";
 
             Window = new Window

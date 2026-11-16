@@ -19,7 +19,8 @@ namespace Claudia
             WriteSignal("quit");   // 多开的几只一起挥手、一起走
             var hint = !Store.Flag("quitHinted");
             if (hint) { Store.Settings["quitHinted"] = true; Store.SaveSettings(); }
-            Js(hint ? "farewell('我先走啦～下次打开 Claude 我再出来', 5000)" : "farewell(null, 2000)");
+            var when = Store.Standalone ? "下次打开我就回来" : "下次打开 Claude 我再出来";
+            Js(hint ? $"farewell('我先走啦～{when}', 5000)" : "farewell(null, 2000)");
             var t = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(hint ? 5 : 2) };
             t.Tick += (_, __) => { t.Stop(); Quit(); };
             t.Start();

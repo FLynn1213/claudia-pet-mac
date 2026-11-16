@@ -114,7 +114,7 @@ input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); ou
     <div class="ctl"><button data-add-pet="claude">放在 Claude 窗口里</button><button data-add-pet="desktop">放在桌面上</button></div></div>
 </div>
 <div class="card" data-tab="pets">
-  <div class="item"><div class="label">说明<small>每一只都是独立的：名字、大小、闲着做什么互不影响，各自右键打开的是自己的设置。<br>待在桌面上的那只始终在最上面，全屏看视频时也会盖在上面，不想看到可以按隐藏快捷键。<br>托盘图标、系统通知、隐藏快捷键只归第 1 只管；Claude 关掉后全部一起退出。</small></div></div>
+  <div class="item"><div class="label">说明<small>每一只都是独立的：名字、大小、闲着做什么互不影响，各自右键打开的是自己的设置。<br>待在桌面上的那只始终在最上面，全屏看视频时也会盖在上面，不想看到可以按隐藏快捷键。<br>托盘图标、系统通知、隐藏快捷键只归第 1 只管；「跟着 Claude」运行时，Claude 关掉后全部一起退出。</small></div></div>
 </div>
 
 <div class="card" data-tab="quota">
@@ -144,6 +144,10 @@ input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); ou
   <div class="item"><div class="label">活跃程度<small>闲着时约每 90 / 45 / 20 秒做一次小动作，时间会略有变化。</small></div><div class="ctl"><div class="seg" id="idleFrequency"><button data-v="quiet">安静</button><button data-v="normal">标准</button><button data-v="lively">活泼</button></div></div></div>
 </div>
 
+<div class="card" data-tab="general">
+  <div class="item"><div class="label">运行方式<small id="runNote"></small></div>
+    <div class="ctl"><div class="seg" id="runMode"><button data-v="claude">跟着 Claude</button><button data-v="standalone">独立运行</button></div></div></div>
+</div>
 <div class="card" data-tab="general">
   <h2>任务通知</h2>
   <div class="item"><div class="label">任务完成或出错<small>Claude Code 一轮工作结束时发送 Windows 通知；中断不提醒。</small></div><div class="ctl"><label class="switch"><input type="checkbox" data-key="notifyResults" aria-label="任务完成或出错通知"><span></span></label></div></div>
@@ -213,6 +217,10 @@ function setState(s) {
   for (const el of document.querySelectorAll('[data-only]')) el.classList.toggle('hidden', s[el.dataset.only] === undefined || s[el.dataset.only] === null)
   for (const b of $('aura').children) b.classList.toggle('on', b.dataset.v === s.aura)
   for (const b of $('quotaStyle').children) b.classList.toggle('on', b.dataset.v === (s.quotaStyle || 'text'))
+  for (const b of $('runMode').children) b.classList.toggle('on', b.dataset.v === (s.runMode || 'claude'))
+  $('runNote').textContent = s.runMode === 'standalone'
+    ? '双击程序就出来，不需要 Claude；Claude 关了也不走，从菜单退出才走。选了「待在 Claude 窗口里」而 Claude 没开时，先待在桌面上。干活状态、额度和通知仍要接入 Claude Code 才有'
+    : 'Claude 打开时出来，Claude 关了就一起退出；Claude 没开时自己打开，30 秒后退出'
   if (s.hotkeys) {
     $('hideHotkey').replaceChildren(...s.hotkeys.map(h => new Option(h.label, h.id, false, h.id === s.hideHotkey)))
     const n = $('hotkeyNote')
@@ -293,6 +301,7 @@ function notice(text) { toast(text) }
 for (const el of document.querySelectorAll('input[data-key]')) el.onchange = () => post({ cmd: 'set', key: el.dataset.key, value: el.checked })
 for (const b of $('aura').children) b.onclick = () => post({ cmd: 'set', key: 'aura', value: b.dataset.v })
 for (const b of $('quotaStyle').children) b.onclick = () => post({ cmd: 'set', key: 'quotaStyle', value: b.dataset.v })
+for (const b of $('runMode').children) b.onclick = () => post({ cmd: 'set', key: 'runMode', value: b.dataset.v })
 for (const b of document.querySelectorAll('[data-action]')) b.onclick = () => post({ cmd: 'action', name: b.dataset.action })
 // 锁链图标：锁着 = 两节扣在一起；解开 = 断开
 const LINK_ON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1a2.5 2.5 0 01-3.5-3.5l1-1"/></svg>'

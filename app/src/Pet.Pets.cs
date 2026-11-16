@@ -10,15 +10,23 @@ namespace Claudia
     sealed partial class Pet
     {
         // ---------------- 待在哪：Claude 窗口里 / 桌面上 ----------------
-        // 照 dsh-pet 的桌面模式：桌面上的那只始终置顶，活动范围是所在显示器的工作区（不进任务栏），Claude 关了一样跟着退出。
+        // 照 dsh-pet 的桌面模式：桌面上的那只始终置顶，活动范围是所在显示器的工作区（不进任务栏）；「跟着 Claude」时 Claude 关了一样跟着退出。
         // 每只各选各的，记在自己的设置里（mode = "desktop" / 没有）。具体怎么摆见 Pet.Follow.cs 的 DesktopPlace
         static bool OnDesktop => Store.Settings.TryGetValue("mode", out var v) && v as string == "desktop";
 
         void SetMode(bool desktop)
         {
+            if (hwnd == IntPtr.Zero || OnDesktop == desktop) return;
+            Store.Settings["mode"] = desktop ? "desktop" : "claude"; Store.SaveSettings();
+            Store.Log(desktop ? "改成待在桌面上" : "改成待在 Claude 窗口里");
+            SwitchArea(WantDesktop());   // 独立运行、Claude 又没开时，选了 Claude 窗口也先待在桌面上
+        }
+
+        /// <summary>真正换地方（不改设置）：SetMode 和 CheckRunMode 都走这里</summary>
+        void SwitchArea(bool desktop)
+        {
             if (desktopMode == desktop || hwnd == IntPtr.Zero) return;
             StopWalk(null); StopMotion(false);
-            Store.Settings["mode"] = desktop ? "desktop" : "claude"; Store.SaveSettings();
             desktopMode = desktop;
             shownInClaude = false; lastClaude = null; topmostAt = DateTime.MinValue;
             if (!desktop)
@@ -28,7 +36,6 @@ namespace Claudia
             }
             PlaceHome();
             UpdatePageHidden();
-            Store.Log(desktop ? "改成待在桌面上" : "改成待在 Claude 窗口里");
         }
 
         // ---------------- 多开 ----------------

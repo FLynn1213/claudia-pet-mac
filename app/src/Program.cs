@@ -19,6 +19,19 @@ namespace Claudia
             return false;
         }
 
+        /// 还没选过运行方式（0.4.1 升上来的，或者第一次用）时选一次，之后在设置页「通用」里改：
+        /// 以前用过的（已有设置）、由 Claude 叫出来的、已经接入过 Claude 的，都照旧「跟着 Claude」；
+        /// 只有第一次用、自己双击打开、又没接入 Claude 的（下载 zip 直接用的人），才设成「独立运行」并待在桌面上
+        static void ChooseRunMode(bool freshInstall, bool byClaude)
+        {
+            var connected = false;
+            try { connected = Pet.ClaudeConnected(); } catch { }
+            var standalone = freshInstall && !byClaude && !connected;
+            Store.SetStandalone(standalone);
+            if (standalone && !Store.Settings.ContainsKey("mode")) { Store.Settings["mode"] = "desktop"; Store.SaveSettings(); }
+            Store.Log($"运行方式：{(standalone ? "独立运行" : "跟着 Claude")}（第一次用 = {freshInstall}，Claude 叫出来的 = {byClaude}，已接入 Claude = {connected}）");
+        }
+
         // [STAThread] 必须紧挨着 Main：WPF 和 WebView2 都要求主线程是 STA（中间插了别的函数，Main 就成了 MTA，启动报 RPC_E_CHANGED_MODE）
         [STAThread]
         static void Main(string[] args)
@@ -106,8 +119,10 @@ namespace Claudia
                     return;
                 }
                 Store.Log("WebView2 运行时 " + version);
+                var freshInstall = main && !File.Exists(Path.Combine(Store.Data, "settings.json"));
                 Store.LoadSettings();
                 if (firstMode != null && !Store.Settings.ContainsKey("mode")) { Store.Settings["mode"] = firstMode; Store.SaveSettings(); }
+                if (main && !Store.HasRunMode) ChooseRunMode(freshInstall, Array.IndexOf(args, Ensure.ByClaudeArg) >= 0);
 
                 app.Startup += async (_, __) =>
                 {
