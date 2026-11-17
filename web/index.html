@@ -43,6 +43,8 @@ html.moving #cards .scard { animation: none !important; }
 #body img { position: absolute; top: 0; bottom: 0; left: -27.5%; width: 155%; height: 100%; object-fit: contain; object-position: 50% 100%;
   opacity: 0; transition: opacity .35s ease; }
 #body img.on { opacity: 1; }
+/* 还没有图片的 <img>：WebKitGTK（Linux 版）会给它画一圈灰色占位框，刚打开时看得到（2026-11-17）；WebView2 不画，加上也没影响 */
+#body img:not([src]), #body img[src=""] { visibility: hidden; }
 #body img#blink { transition: none; }
 html.flipping #body img, html.flipping #body canvas.sheet { transition: none; }   /* 补帧翻页：硬切，不交叉淡入（淡入时前后两帧叠在一起像重影）；从动画换过来时动画画布也直接消失 */
 /* 动画动作（claude-pet 动作包的精灵图，逐帧画到 canvas 上）：两块画布轮流交叉淡入；播放时静态立绘淡出 */

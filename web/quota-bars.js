@@ -49,6 +49,8 @@
     const div = (cls, text) => { const d = document.createElement('div'); if (cls) d.className = cls; if (text != null) d.textContent = text; return d }
     const span = (cls, text) => { const s = document.createElement('span'); s.className = cls; if (text != null) s.textContent = text; return s }
     const timed = result.rows.some(r => r.when)   // 有一行带重置时间就每行都留出那一格，几根条才对得齐
+    // 都没有重置时间时每行只有三格：网格也只给三列，不然下一行的名字会挤到这一行末尾（CSS 默认是四列）
+    if (!timed) el.style.gridTemplateColumns = 'auto 1fr auto'
     el.replaceChildren(...result.rows.map(r => {
       if (r.kind === 'text') return div(r.low ? 'low' : '', r.text)
       const row = div('qbar ' + r.level)

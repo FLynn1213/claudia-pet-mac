@@ -1,0 +1,4 @@
+#!/bin/sh
+# claudia-pet Linux 版启动脚本：装好后 ~/.local/bin/claudia-pet 指向这里
+HERE=$(dirname "$(readlink -f "$0")")
+exec python3 -I "$HERE/claudia/main.py" "$@"

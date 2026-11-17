@@ -8,19 +8,23 @@ import type { EngineInterface, Register } from 'claude-code'
 // 会话开始、你发消息时顺便看一眼桌宠在不在，不在就叫她出来（交给 claudia-pet.exe --ensure，见 app/src/Ensure.cs）。
 // 只写本机的状态文件，不改 Claude 的行为，出错也不影响会话。改自 CrossPet 的 Claude Code mod（MIT）。
 
+// Windows 有 USERPROFILE、用反斜杠；Linux 版（linux/）用 HOME 和斜杠。两边的桌宠读的都是 ~/.claudia/state
 let dir: string | undefined
+let sep = '\\'
 async function stateDir($: EngineInterface): Promise<string | undefined> {
   if (dir) return dir
   const custom = await $.env.get('CLAUDIA_STATE_DIR')
   // 不放 AppData：Claude 商店版会把那里新建的文件重定向走（见 app/src/Store.cs）
-  const home = await $.env.get('USERPROFILE')
-  dir = custom || (home ? `${home}\\.claudia\\state` : undefined)   // Claudia 只有 Windows 版
+  const profile = await $.env.get('USERPROFILE')
+  const home = profile ? undefined : await $.env.get('HOME')
+  if (!profile && home) sep = '/'
+  dir = custom || (profile ? `${profile}\\.claudia\\state` : home ? `${home}/.claudia/state` : undefined)
   return dir
 }
 async function write($: EngineInterface, file: string, data: unknown): Promise<void> {
   const d = await stateDir($)
   if (!d) return
-  await $.fs.write(`${d}\\${file}`, typeof data === 'string' ? data : JSON.stringify(data))
+  await $.fs.write(`${d}${sep}${file}`, typeof data === 'string' ? data : JSON.stringify(data))
 }
 
 type State = { pose: string; event: string; tool: string; ts: number }
@@ -32,7 +36,7 @@ async function setState($: EngineInterface, state: State): Promise<void> {
     await write($, 'claude-state.json', { ...state, sid, noticeV: 1 })
     const d = await stateDir($)
     if (!d) return
-    const file = `${d}\\claude-sessions.json`
+    const file = `${d}${sep}claude-sessions.json`
     let known: Record<string, { pose: string; event: string; ts: number }> = {}
     try { known = JSON.parse(await $.fs.read(file)) } catch {}
     known[sid] = { pose: state.pose, event: state.event, ts: state.ts }
@@ -48,7 +52,7 @@ async function notify($: EngineInterface, kind: 'complete' | 'error' | 'waiting'
   try {
     const d = await stateDir($); if (!d) return
     let sid = 'default'; try { sid = await $.session.id() } catch {}
-    const file = `${d}\\claude-notify-${encodeURIComponent(sid).slice(0, 100)}.json`
+    const file = `${d}${sep}claude-notify-${encodeURIComponent(sid).slice(0, 100)}.json`
     let events: { id: string; kind: string; ts: number }[] = []
     try { events = JSON.parse(await $.fs.read(file)).events || [] } catch {}
     const ts = Date.now() / 1000
@@ -58,14 +62,16 @@ async function notify($: EngineInterface, kind: 'complete' | 'error' | 'waiting'
   } catch {} // Notification failure must never affect a Claude session.
 }
 
-// 叫她出来：claudia-pet.exe --ensure 自己判断（已经在跑、你刚从菜单退出过就不开），并用独立进程打开，不会跟着这个会话一起被关掉。
+// 叫她出来：claudia-pet.exe（Linux 是 ~/.local/bin/claudia-pet）--ensure 自己判断（已经在跑、你刚从菜单退出过就不开），并用独立进程打开，不会跟着这个会话一起被关掉。
 // 一分钟内最多看一次；不等它跑完，失败也不影响 Claude
 let lastEnsure = 0
 async function ensurePet($: EngineInterface): Promise<void> {
   if (Date.now() - lastEnsure < 60_000) return
   lastEnsure = Date.now()
   const local = await $.env.get('LOCALAPPDATA')
-  const exe = (await $.env.get('CLAUDIA_EXE')) || (local ? `${local}\\Programs\\claudia-pet\\claudia-pet.exe` : '')
+  const home = local ? undefined : await $.env.get('HOME')
+  const exe = (await $.env.get('CLAUDIA_EXE'))
+    || (local ? `${local}\\Programs\\claudia-pet\\claudia-pet.exe` : home ? `${home}/.local/bin/claudia-pet` : '')
   if (!exe || !(await $.fs.exists(exe))) return
   await $.process.run([exe, '--ensure'], { timeoutMs: 10_000 })
 }

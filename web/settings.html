@@ -150,9 +150,9 @@ input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); ou
 </div>
 <div class="card" data-tab="general">
   <h2>任务通知</h2>
-  <div class="item"><div class="label">任务完成或出错<small>Claude Code 一轮工作结束时发送 Windows 通知；中断不提醒。</small></div><div class="ctl"><label class="switch"><input type="checkbox" data-key="notifyResults" aria-label="任务完成或出错通知"><span></span></label></div></div>
+  <div class="item"><div class="label">任务完成或出错<small>Claude Code 一轮工作结束时发送系统通知；中断不提醒。</small></div><div class="ctl"><label class="switch"><input type="checkbox" data-key="notifyResults" aria-label="任务完成或出错通知"><span></span></label></div></div>
   <div class="item"><div class="label">等待授权或回答<small>有授权申请或问题需要你处理时提醒。</small></div><div class="ctl"><label class="switch"><input type="checkbox" data-key="notifyWaiting" aria-label="等待授权或回答通知"><span></span></label></div></div>
-  <div class="item"><div class="label">仅在 Claude 不在前台时通知<small>正在使用 Claude 时不额外打扰。Windows 的勿扰或通知设置也会影响显示。</small></div><div class="ctl"><label class="switch"><input type="checkbox" data-key="notifyBackgroundOnly" aria-label="仅在后台通知"><span></span></label></div></div>
+  <div class="item"><div class="label">仅在 Claude 不在前台时通知<small>正在使用 Claude 时不额外打扰。系统的勿扰或通知设置也会影响显示。</small></div><div class="ctl"><label class="switch"><input type="checkbox" data-key="notifyBackgroundOnly" aria-label="仅在后台通知"><span></span></label></div></div>
 </div>
 <div class="card" data-tab="general">
   <div class="item hidden" data-only="hotkeys"><div class="label">隐藏 / 显示的快捷键<small id="hotkeyNote">按一下藏起来，再按一下出来；也可以双击托盘图标叫她出来</small></div>
@@ -180,7 +180,7 @@ input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); ou
 
 <script src="text-size.js"></script>
 <script>
-// 和外壳（Windows 的 WebView2）通信：页面发 {cmd, ...}，外壳改完设置后调 setState(state) 把最新状态推回来
+// 和外壳（Windows 的 WebView2 / Linux 的 WebKitGTK）通信：页面发 {cmd, ...}，外壳改完设置后调 setState(state) 把最新状态推回来
 const post = msg => window.chrome?.webview?.postMessage(msg)
 const $ = id => document.getElementById(id)
 let state = null
@@ -224,7 +224,7 @@ function setState(s) {
   if (s.hotkeys) {
     $('hideHotkey').replaceChildren(...s.hotkeys.map(h => new Option(h.label, h.id, false, h.id === s.hideHotkey)))
     const n = $('hotkeyNote')
-    n.textContent = s.hotkeyFailed ? '这个快捷键被别的程序占用了，换一个试试' : '按一下藏起来，再按一下出来；也可以双击托盘图标叫她出来'
+    n.textContent = s.hotkeyFailed ? '这个快捷键被别的程序占用了，换一个试试' : (s.hotkeyHint || '按一下藏起来，再按一下出来；也可以双击托盘图标叫她出来')
     n.classList.toggle('warn', !!s.hotkeyFailed)
   }
   for (const el of document.querySelectorAll('[data-physics]')) {
@@ -261,7 +261,9 @@ function renderPets(list, max) {
     row.querySelector('[data-p=rename]').onclick = rename
     input.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); rename() } }
     for (const b of row.querySelector('.seg').children) {
-      b.classList.toggle('on', b.dataset.v === p.mode)
+      // Linux 版还不能跟着 Claude 窗口（外壳报 claudeWindow: false）：这个选项先置灰，她都待在桌面上
+      if (b.dataset.v === 'claude' && state?.claudeWindow === false) { b.disabled = true; b.title = 'Linux 版暂时只能待在桌面上，跟着 Claude 窗口还在做' }
+      b.classList.toggle('on', b.dataset.v === p.mode || state?.claudeWindow === false && b.dataset.v === 'desktop')
       b.onclick = () => { if (b.dataset.v !== p.mode) { send('mode', b.dataset.v); toast(b.dataset.v === 'desktop' ? '挪到桌面上' : '挪回 Claude 窗口里') } }
     }
     const bye = row.querySelector('[data-p=dismiss]')
