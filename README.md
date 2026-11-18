@@ -6,6 +6,15 @@ claudia-pet 是一个 Windows 上的 Claude 桌宠（也有 Linux 版，见 [lin
 
 本项目基于 [CrossPet](https://github.com/lokicorvus/crosspet)（lokicorvus）修改而来，并参考了 [dsh-pet](https://github.com/PC2005-cloud/dsh-pet)（PC2005-cloud）。代码、立绘、图标各自的来源和授权写在本文末尾的「来源与授权」和 [NOTICE.md](NOTICE.md) 里。这是非官方同人项目，与 Anthropic 无关。
 
+> **关于这个仓库（macOS 版）**
+>
+> 这里是 [kirito1207/claudia-pet](https://github.com/kirito1207/claudia-pet) 的 fork，在原项目 0.4.2 的基础上加了一个 **macOS 外壳**（`mac/` 目录，Swift + AppKit + WKWebView），让 claudia 也能在 Mac 上用。
+>
+> - 除了 `mac/` 目录和这一段说明，网页、立绘、Claude Code 插件、Windows 和 Linux 外壳都是原作者的内容，**没有改动**。下文的功能介绍、操作说明、来源与授权都是原项目的原文，讲的是 Windows 版。
+> - mac 版怎么安装、做了哪些、和 Windows 版有什么不同，见 [mac/README.md](mac/README.md)。
+> - mac 版的问题请在本仓库提 Issue，不要去原项目那边报。
+> - 感谢原作者 kirito1207，以及 CrossPet、dsh-pet、aboutme-pets 的作者们。授权照原样沿用：代码 MIT，立绘和图标 CC BY-NC-SA 4.0（**不能商用**）。
+
 ## 她会做什么
 
 - **跟着 Claude 窗口**：在 Claude 窗口上方一层，不置顶，别的窗口能盖住她；Claude 最小化时她跟着藏起来，Claude 关掉后她也退出，下次打开 Claude 再出来。
@@ -201,6 +210,7 @@ claudia-pet 不是从零写的，下面这些部分来自别人的作品，请�
 | 动画动作（待机、思考、写东西、敲命令、整理记忆、睡觉、开心、吃惊、被摸头、不耐烦、再见、哼歌、伸懒腰、打哈欠、六个节日，以及被拎起来、闲置小动作、才艺、玩耍、吃喝、时令、偷吃零食、余额钱袋和走路，`characters/claude/anim/`） | 作者 hunmer，来源 [hunmer/aboutme-pets](https://github.com/hunmer/aboutme-pets)（`pets/claude` 动作包）；以 CrossPet 的 Claude 娘为基准 AI 生成并抠像转换，原样使用 | CC BY-NC-SA 4.0，作者在 [hunmer/aboutme-pets#1](https://github.com/hunmer/aboutme-pets/issues/1) 书面授权；见 [NOTICE.md](NOTICE.md) |
 | 软件图标（claudia 抱 Clawd） | 以 CrossPet 原图标中的 Claude 娘头像、CrossPet 立绘 `characters/claude/clawd.webp` 为参考，在 OpenAI Codex 中用其内置 image_gen 工具编辑生成，之后只做了格式和尺寸转换 | 作为上述素材的衍生作品，沿用 CC BY-NC-SA 4.0；完整提示词见 [icon/README.md](icon/README.md) |
 | Clawd（立绘和图标里的橙色像素螃蟹玩偶） | Anthropic 为 Claude Code 使用的形象 | 相关权利归 Anthropic 所有，本项目只作同人致敬，不对其主张任何权利 |
+| macOS 外壳（`mac/`：Swift + AppKit + WKWebView、聊天模式动画、菜单栏图标、隐藏快捷键等） | 本仓库在 claudia-pet 0.4.2 基础上新增，对照 Windows 版 `app/` 和 Linux 版 `linux/` 的行为实现 | 本仓库代码，MIT |
 | WebView2 SDK | 构建时从 nuget.org 下载的 `Microsoft.Web.WebView2` 1.0.3537.50，不放在仓库里 | 按微软该包的许可 |
 
 - **CC BY-NC-SA 4.0** 意思是：可以转载和改编，但要署名、**不能商用**，改编后的素材也要用同样的协议发布。

@@ -4,6 +4,8 @@ claudia-pet 作为独立项目维护，基于 [CrossPet](https://github.com/loki
 
 ## 代码
 
+本仓库 fork 自 [kirito1207/claudia-pet](https://github.com/kirito1207/claudia-pet)，只新增了 macOS 外壳 `mac/`（MIT），其余文件与原项目 0.4.2 相同。
+
 项目代码采用 MIT 协议。CrossPet 的版权与许可见 [LICENSE](LICENSE) 和 [原始许可](upstream/CrossPet-LICENSE)；来源版本记录见 `upstream/CrossPet-VERSION`。
 
 `web/dsh-physics.js` 直接摘录 dsh-pet 的 `runtime/electron-helper/shared-core.js` 中独立的物理函数；网页物理适配器按其桌面驱动方式接入。右键「动作 → 分组 → 具体动作」菜单和白底圆角的柔和菜单样式参照 dsh-pet 的交互与样式，由本项目自行实现（悬停色改为浅橙）。dsh-pet 的版权和 MIT 许可全文保留在本文末尾。
