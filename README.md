@@ -11,7 +11,18 @@ claudia-pet 是一个 Windows 上的 Claude 桌宠（也有 Linux 版，见 [lin
 > 这里是 [kirito1207/claudia-pet](https://github.com/kirito1207/claudia-pet) 的 fork，在原项目 0.4.2 的基础上加了一个 **macOS 外壳**（`mac/` 目录，Swift + AppKit + WKWebView），让 claudia 也能在 Mac 上用。
 >
 > - 除了 `mac/` 目录和这一段说明，网页、立绘、Claude Code 插件、Windows 和 Linux 外壳都是原作者的内容，**没有改动**。下文的功能介绍、操作说明、来源与授权都是原项目的原文，讲的是 Windows 版。
-> - mac 版怎么安装、做了哪些、和 Windows 版有什么不同，见 [mac/README.md](mac/README.md)。
+> - mac 版做了哪些、和 Windows 版有什么不同，见 [mac/README.md](mac/README.md)。
+>
+> **在 Mac 上安装**（需要 macOS 12 以上和 Xcode 命令行工具 `xcode-select --install`，不用装完整 Xcode）：
+>
+> ```bash
+> git clone https://github.com/FLynn1213/claudia-pet-mac.git ~/claudia-pet   # 放在以后不会挪动的地方
+> cd ~/claudia-pet && sh mac/install.sh --connect
+> ```
+>
+> 会编译、启动，并接入 Claude Code 插件和 Claude 桌面端（MCP）；完全退出 Claude 再打开后生效。卸载：`sh mac/uninstall.sh`（加 `--keep-data` 保留设置）。
+>
+> **下文在 Mac 上不一样的地方**：「安装」「卸载」两节是 Windows 的（Mac 用上面的命令）；托盘图标 = 菜单栏图标；快捷键是 ⌃⌥P / ⌃⌥H；没有多开；系统通知是 macOS 通知；数据同样在 `~/.claudia`。另外 Mac 版多了一个 Chat 模式（非 Code）下的回复动画，要辅助功能权限，见 mac/README。
 > - mac 版的问题请在本仓库提 Issue，不要去原项目那边报。
 > - 感谢原作者 kirito1207，以及 CrossPet、dsh-pet、aboutme-pets 的作者们。授权照原样沿用：代码 MIT，立绘和图标 CC BY-NC-SA 4.0（**不能商用**）。
 

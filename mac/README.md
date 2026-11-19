@@ -1,4 +1,4 @@
-# claudia-pet macOS 版（试验版）
+# claudia-pet macOS 版
 
 Windows 版的外壳（WPF + WebView2）换成了 Swift + AppKit + WKWebView。网页（`web/`）、立绘（`characters/`）、Claude Code 插件（`plugin/`）三个平台共用，数据目录也是同一个 `~/.claudia`。
 
@@ -15,6 +15,15 @@ sh mac/install.sh --connect
 不想改 Claude 的配置就不加 `--connect`，之后右键菜单里也能接入 / 撤销。改之前都会备份（`原文件名.bak-claudia-时间`）。
 
 直接运行：`mac/build/claudia-pet`。日志：`~/.claudia/mac.log`，`CLAUDIA_DEBUG=1` 会写得更细。
+
+## 卸载
+
+```bash
+sh mac/uninstall.sh              # 撤销两项接入、退出、删掉 ~/.local/bin/claudia-pet、编译结果和 ~/.claudia
+sh mac/uninstall.sh --keep-data  # 同上，但保留设置和数据
+```
+
+仓库文件夹本身不删，不要了自己删掉。给过辅助功能权限的话，到「系统设置 → 隐私与安全性 → 辅助功能」里删掉 claudia-pet。
 
 ## 已做 / 没做
 
