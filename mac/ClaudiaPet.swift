@@ -446,6 +446,8 @@ final class Pet: NSObject, WKScriptMessageHandler, WKNavigationDelegate, NSMenuD
     var claudePidCache: pid_t = 0, claudePidAt = 0.0
     var lastFollowAt = 0.0, lastFullAt = 0.0, fastUntil = 0.0
     var claudeWinID: CGWindowID = 0
+    var claudeDialogOver = false      // Claude 的对话框正盖在主窗口上
+    var lastDialogOver = false
     var layerFails = 0, layerBroken = false
     var settingsController: SettingsController?
     var current = "claude"
@@ -789,24 +791,28 @@ final class Pet: NSObject, WKScriptMessageHandler, WKNavigationDelegate, NSMenuD
         return claudePidCache == 0 ? nil : claudePidCache
     }
 
-    /// Claude 主窗口（最前面的、够大的普通窗口）：位置、窗口号、她现在是不是压在它上面。
-    /// 读窗口位置不需要屏幕录制权限，只有读窗口标题才要
+    /// Claude 主窗口：位置、窗口号、她现在是不是摆对了。读窗口位置不需要屏幕录制权限，只有读窗口标题才要。
+    /// 挑哪个窗口、要不要给对话框让开，见 FollowPick.swift
     func findClaude() -> (CGRect, Int, Bool)? {
         guard let pid = claudePid(),
               let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]]
-        else { return nil }
+        else { claudeDialogOver = false; return nil }
         let mine = window.windowNumber
         var petIndex: Int? = nil
+        var wins: [FollowWindow] = []   // Claude 的普通窗口，从前往后
         for (i, wi) in list.enumerated() {
             let num = (wi[kCGWindowNumber as String] as? NSNumber)?.intValue ?? -1
             if num == mine { petIndex = i; continue }
             guard (wi[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value == pid,
                   (wi[kCGWindowLayer as String] as? NSNumber)?.intValue == 0,
+                  (wi[kCGWindowAlpha as String] as? NSNumber)?.doubleValue ?? 1 > 0,
                   let bd = wi[kCGWindowBounds as String] as? NSDictionary,
-                  let r = CGRect(dictionaryRepresentation: bd as CFDictionary), r.width >= 300, r.height >= 300 else { continue }
-            return (r, num, petIndex != nil)   // 列表是从前往后排的：她在前面就是压在上面
+                  let r = CGRect(dictionaryRepresentation: bd as CFDictionary), r.width >= 50, r.height >= 50 else { continue }
+            wins.append(FollowWindow(index: i, number: num, rect: r))
         }
-        return nil
+        guard let p = pickFollowWindow(wins, petIndex: petIndex, current: Int(claudeWinID)) else { claudeDialogOver = false; return nil }
+        claudeDialogOver = p.dialogOver
+        return (p.main.rect, p.main.number, p.petPlaced)
     }
 
     /// 只问这一个窗口的位置，比翻整张窗口列表便宜得多，拖动 Claude 窗口时每帧用它
@@ -832,7 +838,7 @@ final class Pet: NSObject, WKScriptMessageHandler, WKNavigationDelegate, NSMenuD
     /// Claude 在最前台时她用浮动层级：你在 Claude 里每点一下，系统都会把 Claude 窗口提到最前，
     /// 普通层级的她会被压到下面、等下一次检查才摆回来，看着就是闪一下。切到别的应用，她才降成「只压在 Claude 上面」
     func ensureLayer(above: Bool, num: Int) {
-        if layerMode() == "top" || layerBroken || !wantFollow() || claudeIsFront() {
+        if layerMode() == "top" || layerBroken || !wantFollow() || (claudeIsFront() && !claudeDialogOver) {
             if window.level != .floating { window.level = .floating }
             layerFails = 0
             return
@@ -869,6 +875,8 @@ final class Pet: NSObject, WKScriptMessageHandler, WKNavigationDelegate, NSMenuD
         var found: CGRect? = nil
         if busy && n - lastFullAt < 120 { found = quickRect() }   // 忙的时候多数帧只问这一个窗口，每 120 毫秒翻一次整张列表（校正层级）
         if found == nil, let f = findClaude() {
+            if CGWindowID(f.1) != claudeWinID { log("跟随：Claude 窗口 \(f.1)，\(Int(f.0.width))×\(Int(f.0.height))") }
+            if claudeDialogOver != lastDialogOver { lastDialogOver = claudeDialogOver; log(claudeDialogOver ? "跟随：Claude 弹出了对话框，她退到对话框后面" : "跟随：对话框关了") }
             found = f.0; claudeWinID = CGWindowID(f.1); lastFullAt = n
             ensureLayer(above: f.2, num: f.1)
         }

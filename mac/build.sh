@@ -2,8 +2,10 @@
 # 编译 mac 版外壳并打成 .app 包（系统通知需要）：需要 Xcode 命令行工具（xcode-select --install），不需要完整 Xcode
 set -eu
 cd "$(dirname "$0")"
-mkdir -p build
-swiftc -O -swift-version 5 -o build/claudia-pet.bin ClaudiaPet.swift -framework Cocoa -framework WebKit -framework UserNotifications
+mkdir -p build/src
+# ClaudiaPet.swift 有顶层代码，和别的文件一起编译时要叫 main.swift：用符号链接，报错里的 build/src/main.swift 就是 ClaudiaPet.swift
+ln -sf ../../ClaudiaPet.swift build/src/main.swift
+swiftc -O -swift-version 5 -o build/claudia-pet.bin build/src/main.swift FollowPick.swift -framework Cocoa -framework WebKit -framework UserNotifications
 
 APP=build/claudia-pet.app
 VER=$(cat ../VERSION 2>/dev/null || echo 0)

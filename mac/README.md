@@ -39,7 +39,7 @@ sh mac/install.sh --connect
 
 ## 代码
 
-只有一个文件 `ClaudiaPet.swift`，和 Linux 版 `linux/claudia/*.py` 一一对应（`Pet` 类 ≈ `pet.py`，`SchemeHandler` ≈ `web.py`，`Connect` ≈ `claude.py`）。
+主体是 `ClaudiaPet.swift`（跟随窗口的挑选逻辑单独放在 `FollowPick.swift`，测试：`sh mac/test.sh`），和 Linux 版 `linux/claudia/*.py` 一一对应（`Pet` 类 ≈ `pet.py`，`SchemeHandler` ≈ `web.py`，`Connect` ≈ `claude.py`）。
 坐标一律用「全局左上原点」，和网页、Windows / Linux 版一致；只在 `moveTo` 里换成 Cocoa 的左下原点。
 
 ## 已知限制

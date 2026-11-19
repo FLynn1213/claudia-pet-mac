@@ -4,7 +4,8 @@
 `web/`、`characters/`、`plugin/` 是各平台共用的，**不要改**，除非 Windows/Linux 也一起改。
 
 ## 结构
-- `mac/ClaudiaPet.swift`：单文件，Swift + AppKit + WKWebView（约 1700 行）。`mac/build.sh` 编译并打包成 ad-hoc 签名的 app，`mac/install.sh` 编译后链接到 `~/.local/bin/claudia-pet`。
+- `mac/ClaudiaPet.swift`：主体，Swift + AppKit + WKWebView（约 1900 行）。`mac/FollowPick.swift`：跟随哪个 Claude 窗口的纯逻辑，单独拆出来好测试。`mac/build.sh` 编译并打包成 app（签名见下），`mac/install.sh` 编译后链接到 `~/.local/bin/claudia-pet`。
+- 测试：`sh mac/test.sh`（`mac/tests/`，只测不碰系统接口的逻辑）。改了跟随逻辑先跑它。
 - 外壳 ↔ 网页协议：注入 `window.chrome.webview.postMessage` 兼容层；网页上报 hitRects/motion/walk 等；外壳调用 JS：init、setCharacter、setSizes、setQuota、applyCharState、petMotion.*、show(...) 等。可对照 `linux/claudia/pet.py` 和 `app/src/`。
 - `claudia://` 自定义协议：`app` 主机读 `web/`，`data` 主机读 `characters/`。
 - 状态数据由 `plugin/hooks/register.ts` 写到 `~/.claudia/state/`，外壳轮询（按修改时间）。日志在 `~/.claudia/mac.log`，设置在 `~/.claudia/settings.json`。
@@ -14,6 +15,7 @@
 动画与互动、拖动与甩出、跟随 Claude 窗口（CGWindowList，不要屏幕录制权限）、层级（只在 Claude 上面；Claude 在前台时用 .floating，避免点击闪烁）、额度条（只来自 Claude Code）、系统通知（需要 .app 包，退回 osascript）、设置页、随 Claude 启动/退出、右键「动作」菜单、菜单栏图标。
 
 ## 已知限制 / 决定
+- 跟随哪个窗口（2026-11-20 修）：Claude 的授权 / 确认对话框是独立的大窗口，原来按「最前面的够大窗口」挑，会跳到对话框上、只能在对话框里活动。现在跟定一个窗口（`claudeWinID`）就一直跟，没了才挑最大的；对话框盖在主窗口上时（`claudeDialogOver`）不用 .floating，摆到主窗口和对话框之间，免得挡住对话框的按钮。逻辑在 `FollowPick.swift`，`mac/tests/FollowPickTests.swift` 用真机尺寸覆盖了这些情况（换回旧规则会挂 5 项）。实测过：Claude 窗口内的「信任此工作区」和系统的「想访问桌面」都不是 Claude 的独立窗口，她不动；独立的「Allow Claude to access this folder?」只在云端会话出现，没能当场复现。跟随窗口、对话框出现 / 关闭会写进 mac.log（「跟随：…」）。
 - 三指拖移甩不出去：macOS 抬手后延迟发松手事件。试过放宽判定，延迟明显，已放弃，写进 README。
 - 账户级用量同步：没有官方接口，已删除；额度只用 Code 标签的数据。
 - 应用图标沿用原来的 `icon/AppIcon.png`（用户要求）；菜单栏图标也用它的彩色缩小版（2026-11-19 用户在三种方案里选的：单色线稿模板图 18 点下发灰发糊，已删掉；也比较过单色小花模板图）。菜单栏图标可在右键菜单里关。
